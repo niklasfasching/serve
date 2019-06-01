@@ -1,0 +1,35 @@
+* todo
+- tests (httptest)
+  - not sure yet how i want to structure tests - seems hard to use the fixture pattern and i really like that one right now
+  - e.g. for log other outputs are required - maybe i'll have to write tests by hand here
+- swap out Server.Errorlog for logger without prefix date and stuff
+- middleware: [[https://blog.golang.org/http-tracing][tracing]], pprof
+- middleware: custom error pages (map[statusCode]path)
+  for that i need to rewrite ALL requests and provide a custom responsewriter
+  if that responsewriter is an error try to serve that error page and only then forward it
+  all other shit gets forwarded
+  that means i just have to be ahead of / wrap all other middlewares and forward to them
+
+- systemd: socket activation
+- systemd: paths for StateDirectory, LogsDirectory...
+* limitations
+- limited feature scope and configurability - the goal is something more barebones/simple
+- no wildcard routing / certs
+- no ecosystem of 3rd party middlewares
+* misc
+** git fs
+
+type GitFS struct{ http.FileSystem }
+
+func (fs *GitFS) Open(name string) (http.File, error) {
+	switch path.Base(name) {
+	// https://stackoverflow.com/questions/12605576/git-special-files
+	case ".git", ".gitignore", ".gitattributes", ".gitmodules":
+		return nil, os.ErrNotExist
+	default:
+		return fs.FileSystem.Open(name)
+	}
+}
+* inspiration
+- https://github.com/mholt/caddy/
+- https://github.com/oklog/run/blob/master/group.go

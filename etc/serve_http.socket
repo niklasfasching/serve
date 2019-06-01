@@ -1,0 +1,6 @@
+[Unit]
+Description=serve HTTP socket
+
+[Socket]
+ListenStream=80
+Service=serve

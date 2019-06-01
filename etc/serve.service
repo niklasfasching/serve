@@ -1,0 +1,26 @@
+[Unit]
+Description=serve HTTP web server
+Documentation=https://github.com/niklasfasching/serve
+After=network-online.target
+Wants=network-online.target systemd-networkd-wait-online.service
+
+[Service]
+Restart=on-abnormal
+
+ExecStart=/usr/local/bin/serve /etc/serve/serve.json
+ExecReload=/bin/kill -USR1 $MAINPID
+
+KillMode=mixed
+KillSignal=SIGQUIT
+TimeoutStopSec=5s
+
+ConfigurationDirectory=serve
+StateDirectory=serve
+LogsDirectory=serve
+
+DynamicUser=true
+CapabilityBoundingSet=CAP_NET_BIND_SERVICE
+AmbientCapabilities=CAP_NET_BIND_SERVICE
+
+[Install]
+WantedBy=multi-user.target
