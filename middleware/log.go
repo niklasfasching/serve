@@ -27,8 +27,8 @@ type Log struct {
 
 func (l *Log) Wrap(next http.Handler) http.Handler {
 	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-		lw, timestamp := &logResponseWriter{0, 0, w}, time.Now()
-		next.ServeHTTP(lw, r)
+		rw, timestamp := &responseWriter{ResponseWriter: w}, time.Now()
+		next.ServeHTTP(w, r)
 		l.accessLog.Print(l.format(map[string]interface{}{
 			"remote":    maskIP(r.RemoteAddr),
 			"userAgent": r.UserAgent(),
@@ -36,8 +36,8 @@ func (l *Log) Wrap(next http.Handler) http.Handler {
 			"proto":     r.Proto,
 			"method":    r.Method,
 			"url":       r.URL,
-			"status":    lw.status,
-			"size":      lw.count,
+			"status":    rw.status,
+			"size":      rw.count,
 		}))
 	})
 }

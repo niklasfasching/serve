@@ -19,24 +19,31 @@ type rotatingFile struct {
 	locked bool
 }
 
-type logResponseWriter struct {
-	status int
-	count  int
+type responseWriter struct {
+	status      int
+	count       int
+	errorBuffer *bytes.Buffer
 	http.ResponseWriter
 }
 
 var ipv4Mask = net.CIDRMask(16, 32)  // 255.255.0.0
 var ipv6Mask = net.CIDRMask(56, 128) // ffff:ffff:ffff:ff00::
 
-func (l *logResponseWriter) Write(bytes []byte) (int, error) {
-	count, err := l.ResponseWriter.Write(bytes)
-	l.count += count
+func (r *responseWriter) Write(bytes []byte) (count int, err error) {
+	if r.status > 400 && r.errorBuffer != nil {
+		count, err = r.errorBuffer.Write(bytes)
+	} else {
+		count, err = r.ResponseWriter.Write(bytes)
+	}
+	r.count += count
 	return count, err
 }
 
-func (l *logResponseWriter) WriteHeader(status int) {
-	l.status = status
-	l.ResponseWriter.WriteHeader(status)
+func (r *responseWriter) WriteHeader(status int) {
+	r.status = status
+	if r.status < 400 || r.errorBuffer == nil {
+		r.ResponseWriter.WriteHeader(status)
+	}
 }
 
 func (rf *rotatingFile) Write(bytes []byte) (int, error) {

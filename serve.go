@@ -43,9 +43,10 @@ type Middleware struct {
 
 var sortedHandlers = []Handler{
 	&middleware.Static{},
-	&middleware.Log{},
 	&middleware.Proxy{},
 	&middleware.BasicAuth{},
+	&middleware.Log{},
+	&middleware.Errors{},
 }
 
 var handlers = map[string]Handler{}
