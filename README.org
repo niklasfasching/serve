@@ -1,3 +1,7 @@
+* why
+caddy is nice - but it's huge (~15k LOC) and not that easy to grok - i mainly want an http server that serves my blog (static) and
+maybe proxies a few random services to the outside world. nginx or whatever would also be possible but i hope this will teach me something
+about http servers and nginx is just so annoying to configure...
 * todo
 - tests (httptest)
   - not sure yet how i want to structure tests - seems hard to use the fixture pattern and i really like that one right now
@@ -9,6 +13,9 @@
 - limited feature scope and configurability - the goal is something more barebones/simple
 - no wildcard routing / certs
 - no ecosystem of 3rd party middlewares
+- no fancy caddyfile syntax - just json for now. what annoys me about other http servers is not the configuration format itself but
+  how much you have to configure - i want the sane defaults thing from caddy but will keep json because i don't see value in adding the complexity
+  of a custom configfile format (for now; i do like writing parsers...)
 * misc
 ** git fs
 
