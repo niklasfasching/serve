@@ -5,7 +5,9 @@ import (
 	"encoding/json"
 	"fmt"
 	"io/ioutil"
+	"log"
 	"net/http"
+	"os"
 	"path/filepath"
 	"reflect"
 	"strings"
@@ -72,10 +74,14 @@ func Start(ctx context.Context, c *Config) error {
 		routes = append(routes, server.Route{Handler: handler, Patterns: vhost.Patterns})
 	}
 
+	httpConfig := c.HTTPConfig.Config
+	if httpConfig.ErrorLog == nil {
+		httpConfig.ErrorLog = log.New(os.Stderr, "", 0)
+	}
 	s := &server.Server{
 		LetsEncrypt: c.LetsEncrypt,
 		Routes:      routes,
-		Config:      c.HTTPConfig.Config,
+		Config:      httpConfig,
 	}
 	if !c.LetsEncrypt.AcceptTOS {
 		wg.Start(func(ctx context.Context) error {
