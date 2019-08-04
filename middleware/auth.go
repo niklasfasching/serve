@@ -13,12 +13,7 @@ type BasicAuth struct {
 	Realm    string
 }
 
-func (ba *BasicAuth) Start(ctx context.Context) error {
-	<-ctx.Done()
-	return nil
-}
-
-func (ba *BasicAuth) Wrap(next http.Handler) http.Handler {
+func (ba *BasicAuth) Wrap(next http.Handler) (http.Handler, func(context.Context) error, error) {
 	eq := func(s1, s2 string) bool {
 		return subtle.ConstantTimeCompare([]byte(s1), []byte(s2)) == 1
 	}
@@ -30,5 +25,5 @@ func (ba *BasicAuth) Wrap(next http.Handler) http.Handler {
 			return
 		}
 		next.ServeHTTP(w, r)
-	})
+	}), nil, nil
 }

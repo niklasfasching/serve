@@ -9,17 +9,12 @@ import (
 
 type Proxy struct {
 	URL string
-	url *url.URL
 }
 
-func (p *Proxy) Wrap(http.Handler) http.Handler {
-	return httputil.NewSingleHostReverseProxy(p.url)
-}
-
-func (p *Proxy) Start(ctx context.Context) (err error) {
-	if p.url, err = url.Parse(p.URL); err != nil {
-		return err
+func (p *Proxy) Wrap(http.Handler) (http.Handler, func(context.Context) error, error) {
+	url, err := url.Parse(p.URL)
+	if err != nil {
+		return nil, nil, err
 	}
-	<-ctx.Done()
-	return nil
+	return httputil.NewSingleHostReverseProxy(url), nil, nil
 }

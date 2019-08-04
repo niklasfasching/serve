@@ -25,7 +25,17 @@ type Log struct {
 	format    func(interface{}) string
 }
 
-func (l *Log) Wrap(next http.Handler) http.Handler {
+func (l *Log) Wrap(next http.Handler) (http.Handler, func(context.Context) error, error) {
+	if l.Path == "" {
+		return nil, nil, errors.New("log name must not be empty")
+	}
+	f, err := os.OpenFile(l.Path, os.O_RDWR|os.O_CREATE, 0664)
+	if err != nil {
+		return nil, nil, err
+	}
+	rf := &rotatingFile{path: l.Path, file: f}
+	l.accessLog = log.New(rf, "", 0)
+	l.format, err = newLogFormatter(l.Format)
 	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		rw, timestamp := &responseWriter{ResponseWriter: w}, time.Now()
 		next.ServeHTTP(w, r)
@@ -39,19 +49,5 @@ func (l *Log) Wrap(next http.Handler) http.Handler {
 			"status":    rw.status,
 			"size":      rw.count,
 		}))
-	})
-}
-
-func (l *Log) Start(ctx context.Context) error {
-	if l.Path == "" {
-		return errors.New("log name must not be empty")
-	}
-	f, err := os.OpenFile(l.Path, os.O_RDWR|os.O_CREATE, 0664)
-	if err != nil {
-		return err
-	}
-	rf := &rotatingFile{path: l.Path, file: f}
-	l.accessLog = log.New(rf, "", 0)
-	l.format, err = newLogFormatter(l.Format)
-	return rf.start(ctx)
+	}), rf.start, nil
 }

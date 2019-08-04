@@ -32,8 +32,7 @@ type VirtualHost struct {
 }
 
 type Handler interface {
-	Wrap(http.Handler) http.Handler
-	Start(context.Context) error
+	Wrap(http.Handler) (http.Handler, func(context.Context) error, error)
 }
 
 type Middleware struct {
@@ -65,11 +64,17 @@ func Start(ctx context.Context, c *Config) error {
 		if err != nil {
 			return err
 		}
-		handler := http.Handler(nil)
+		handler, task, err := http.Handler(nil), (func(context.Context) error)(nil), error(nil)
 		for _, m := range sortedMiddlewares {
-			wg.Start(m.Start)
-			if handler = m.Wrap(handler); handler == nil {
-				return fmt.Errorf("bad middleware for %v: %#v(%#v) -> nil", vhost.Patterns, m.Handler, handler)
+			handler, task, err = m.Wrap(handler)
+			if err != nil {
+				return fmt.Errorf("bad middleware for %v: %#v -> %s", vhost.Patterns, m, err)
+			}
+			if handler == nil {
+				return fmt.Errorf("bad middleware for %v: %#v -> nil", vhost.Patterns, m)
+			}
+			if task != nil {
+				wg.Start(task)
 			}
 		}
 		routes = append(routes, server.Route{Handler: handler, Patterns: vhost.Patterns})

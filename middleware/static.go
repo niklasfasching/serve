@@ -10,30 +10,23 @@ import (
 type Static struct {
 	Root            string
 	ListDirectories bool
-
-	fileServer http.Handler
 }
 
 type FS struct{ http.FileSystem }
 type File struct{ http.File }
 
-func (s *Static) Wrap(http.Handler) http.Handler {
-	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-		s.fileServer.ServeHTTP(w, r)
-	})
-}
-
-func (s *Static) Start(ctx context.Context) error {
+func (s *Static) Wrap(http.Handler) (http.Handler, func(context.Context) error, error) {
 	if f, err := os.Stat(s.Root); err != nil || !f.IsDir() {
-		return fmt.Errorf("root must be a directory: %s", err)
+		return nil, nil, fmt.Errorf("root must be a directory: %s", err)
 	}
 	fs := http.FileSystem(http.Dir(s.Root))
 	if !s.ListDirectories {
 		fs = FS{fs}
 	}
-	s.fileServer = http.FileServer(fs)
-	<-ctx.Done()
-	return nil
+	fileServer := http.FileServer(fs)
+	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		fileServer.ServeHTTP(w, r)
+	}), nil, nil
 }
 
 func (fs FS) Open(name string) (http.File, error) {
