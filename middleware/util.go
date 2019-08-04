@@ -5,7 +5,6 @@ import (
 	"context"
 	"fmt"
 	"net"
-	"net/http"
 	"os"
 	"strings"
 	"text/template"
@@ -19,32 +18,8 @@ type rotatingFile struct {
 	locked bool
 }
 
-type responseWriter struct {
-	status      int
-	count       int
-	errorBuffer *bytes.Buffer
-	http.ResponseWriter
-}
-
 var ipv4Mask = net.CIDRMask(16, 32)  // 255.255.0.0
 var ipv6Mask = net.CIDRMask(56, 128) // ffff:ffff:ffff:ff00::
-
-func (r *responseWriter) Write(bytes []byte) (count int, err error) {
-	if r.status > 400 && r.errorBuffer != nil {
-		count, err = r.errorBuffer.Write(bytes)
-	} else {
-		count, err = r.ResponseWriter.Write(bytes)
-	}
-	r.count += count
-	return count, err
-}
-
-func (r *responseWriter) WriteHeader(status int) {
-	r.status = status
-	if r.status < 400 || r.errorBuffer == nil {
-		r.ResponseWriter.WriteHeader(status)
-	}
-}
 
 func (rf *rotatingFile) Write(bytes []byte) (int, error) {
 	if rf.locked {

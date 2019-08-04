@@ -37,7 +37,7 @@ func (l *Log) Wrap(next http.Handler) (http.Handler, func(context.Context) error
 	l.accessLog = log.New(rf, "", 0)
 	l.format, err = newLogFormatter(l.Format)
 	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-		rw, timestamp := &responseWriter{ResponseWriter: w}, time.Now()
+		rw, timestamp := &logResponseWriter{ResponseWriter: w}, time.Now()
 		next.ServeHTTP(w, r)
 		l.accessLog.Print(l.format(map[string]interface{}{
 			"remote":    maskIP(r.RemoteAddr),
@@ -50,4 +50,21 @@ func (l *Log) Wrap(next http.Handler) (http.Handler, func(context.Context) error
 			"size":      rw.count,
 		}))
 	}), rf.start, nil
+}
+
+type logResponseWriter struct {
+	status int
+	count  int
+	http.ResponseWriter
+}
+
+func (r *logResponseWriter) Write(bytes []byte) (count int, err error) {
+	count, err = r.ResponseWriter.Write(bytes)
+	r.count += count
+	return count, err
+}
+
+func (r *logResponseWriter) WriteHeader(status int) {
+	r.ResponseWriter.WriteHeader(status)
+	r.status = status
 }
